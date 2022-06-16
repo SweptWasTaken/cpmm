@@ -1,0 +1,40 @@
+name: CD Test
+on:
+  push:
+    branches:
+      main:
+
+jobs: 
+  build:
+    strat:
+      matrix:
+        os: [windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      Solution_Path: CPMM.sln
+      Wpf_Project_Path: CPMM\CPMM.csproj
+      Actions_Allow_Unsecure_Commands: true # Allows AddPAth and SetEnv commands
+
+    steps:
+    - name: Checkout Master
+      uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.x
+    - name: Install dependencies
+      run: dotnet restore
+    # Add  MsBuild to the PATH: https://github.com/microsoft/setup-msbuild
+    - name: Setup MSBuild.exe
+      uses: microsoft/setup-msbuild@v1.0.1
+    - name: Build Project
+      run: msbuild $env:Solution_Path /t:Restore /p:Configuration=Release
+    - name: Build Project
+      run: msbuild /p:Configuration=Release /p:RestorePackages=false /p:WarningsAsErrors=nullable
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
